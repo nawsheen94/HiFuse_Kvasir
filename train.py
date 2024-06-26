@@ -4,6 +4,9 @@ import torchvision.transforms as transforms
 from torchvision.datasets import ImageFolder
 from torch.utils.tensorboard import SummaryWriter
 import os
+from models.HiFuseSmall import HiFuseSmall
+import torch.nn as nn
+import torch.optim as optim
 
 # Define transformations
 transform = transforms.Compose([
@@ -28,7 +31,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 num_classes = len(dataset.classes)
 model = HiFuseSmall(num_classes=num_classes).to(device)
 criterion = nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+optimizer = optim.Adam(model.parameters(), lr=0.001)
 
 # Training and validation loops with TensorBoard logging
 log_dir = os.path.join("runs", "experiment1")
@@ -36,46 +39,42 @@ writer = SummaryWriter(log_dir)
 
 num_epochs = 5  # Reduced number of epochs for quicker training
 
-for epoch in range(num_epochs):
-    for phase in ['train', 'val']:
-        if phase == 'train':
-            model.train()
-            data_loader = train_loader
-        else:
-            model.eval()
-            data_loader = val_loader
-        
-        running_loss = 0.0
-        running_corrects = 0
+def train_and_validate(model, train_loader, val_loader, criterion, optimizer, num_epochs, writer):
+    for epoch in range(num_epochs):
+        for phase in ['train', 'val']:
+            if phase == 'train':
+                model.train()
+                data_loader = train_loader
+            else:
+                model.eval()
+                data_loader = val_loader
+            
+            running_loss = 0.0
+            running_corrects = 0
 
-        for inputs, labels in data_loader:
-            inputs = inputs.to(device)
-            labels = labels.to(device)
+            for inputs, labels in data_loader:
+                inputs = inputs.to(device)
+                labels = labels.to(device)
 
-            optimizer.zero_grad()
+                optimizer.zero_grad()
 
-            with torch.set_grad_enabled(phase == 'train'):
-                outputs = model(inputs)
-                _, preds = torch.max(outputs, 1)
-                loss = criterion(outputs, labels)
+                with torch.set_grad_enabled(phase == 'train'):
+                    outputs = model(inputs)
+                    _, preds = torch.max(outputs, 1)
+                    loss = criterion(outputs, labels)
 
-                if phase == 'train':
-                    loss.backward()
-                    optimizer.step()
+                    if phase == 'train':
+                        loss.backward()
+                        optimizer.step()
 
-            running_loss += loss.item() * inputs.size(0)
-            running_corrects += torch.sum(preds == labels.data)
+                running_loss += loss.item() * inputs.size(0)
+                running_corrects += torch.sum(preds == labels.data)
 
-        epoch_loss = running_loss / len(data_loader.dataset)
-        epoch_acc = running_corrects.double() / len(data_loader.dataset)
+            epoch_loss = running_loss / len(data_loader.dataset)
+            epoch_acc = running_corrects.double() / len(data_loader.dataset)
 
-        writer.add_scalar(f'Loss/{phase}', epoch_loss, epoch)
-        writer.add_scalar(f'Accuracy/{phase}', epoch_acc, epoch)
+            writer.add_scalar(f'Loss/{phase}', epoch_loss, epoch)
+            writer.add_scalar(f'Accuracy/{phase}', epoch_acc, epoch)
 
+train_and_validate(model, train_loader, val_loader, criterion, optimizer, num_epochs, writer)
 writer.close()
-
-# Load the TensorBoard notebook extension
-%load_ext tensorboard
-
-# Launch TensorBoard
-%tensorboard --logdir runs
