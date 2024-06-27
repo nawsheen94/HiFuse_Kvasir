@@ -52,7 +52,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # Initialize model, loss function, and optimizer
 num_classes = len(dataset.classes)
-model = HiFuseSmall(num_classes=num_classes).to(device)
+model = main_model(num_classes=num_classes).to(device)
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
