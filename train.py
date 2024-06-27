@@ -7,6 +7,7 @@ import os
 from models.HiFuseSmall import HiFuseSmall
 import torch.nn as nn
 import torch.optim as optim
+import zipfile
 
 # Define transformations
 transform = transforms.Compose([
@@ -14,6 +15,28 @@ transform = transforms.Compose([
     transforms.ToTensor(),
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
 ])
+
+# Check if the datasets directory exists and if not, create it
+if not os.path.exists('datasets/Kvasir'):
+    os.makedirs('datasets/Kvasir')
+
+# Unzip the dataset, handling potential file conflicts
+zip_path = '/content/drive/MyDrive/Kvasir.zip'
+extract_path = 'datasets/'  # Extract directly into 'datasets'
+
+def create_dirs(extract_path, member):
+    """Create directories if they don't exist"""
+    path = os.path.join(extract_path, member.filename)
+    if not os.path.exists(os.path.dirname(path)):
+        os.makedirs(os.path.dirname(path))
+
+with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+    for member in zip_ref.infolist():
+        create_dirs(extract_path, member)
+        try:
+            zip_ref.extract(member, extract_path)
+        except zipfile.BadZipFile as e:
+            print(f"Error extracting {member.filename}: {e}")
 
 # Load dataset
 dataset = ImageFolder(root='datasets/Kvasir', transform=transform)
