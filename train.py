@@ -17,12 +17,12 @@ transform = transforms.Compose([
 ])
 
 # Check if the datasets directory exists and if not, create it
-if not os.path.exists('datasets/Kvasir'):
-    os.makedirs('datasets/Kvasir')
+if not os.path.exists('/content/data/KVasir'):
+    os.makedirs('/content/data/KVasir')
 
 # Unzip the dataset, handling potential file conflicts
 zip_path = '/content/drive/MyDrive/Kvasir.zip'
-extract_path = 'datasets/'  # Extract directly into 'datasets'
+extract_path = '/content/data'  # Extract directly into 'datasets'
 
 def create_dirs(extract_path, member):
     """Create directories if they don't exist"""
@@ -39,7 +39,7 @@ with zipfile.ZipFile(zip_path, 'r') as zip_ref:
             print(f"Error extracting {member.filename}: {e}")
 
 # Load dataset
-dataset = ImageFolder(root='datasets/Kvasir', transform=transform)
+dataset = ImageFolder(root='/content/data/KVasir', transform=transform)
 train_size = int(0.5 * len(dataset))
 val_size = len(dataset) - train_size
 train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
