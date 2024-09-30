@@ -8,6 +8,10 @@ from models.HiFuseSmall import HiFuseSmall
 import torch.nn as nn
 import torch.optim as optim
 import zipfile
+from google.colab import drive
+
+# Mount Google Drive
+drive.mount('/content/drive')
 
 # Define transformations
 transform = transforms.Compose([
@@ -16,30 +20,22 @@ transform = transforms.Compose([
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
 ])
 
-# Check if the datasets directory exists and if not, create it
-if not os.path.exists('datasets/Kvasir'):
-    os.makedirs('datasets/Kvasir')
-
-# Unzip the dataset, handling potential file conflicts
+# Path to the Kvasir.zip file in Google Drive
 zip_path = '/content/drive/MyDrive/Kvasir.zip'
-extract_path = 'datasets/'  # Extract directly into 'datasets'
+extract_path = 'datasets/Kvasir'  # Folder to extract dataset
 
-def create_dirs(extract_path, member):
-    """Create directories if they don't exist"""
-    path = os.path.join(extract_path, member.filename)
-    if not os.path.exists(os.path.dirname(path)):
-        os.makedirs(os.path.dirname(path))
+# Check if the dataset folder exists and unzip only if necessary
+if not os.path.exists(extract_path):
+    os.makedirs(extract_path)
 
-with zipfile.ZipFile(zip_path, 'r') as zip_ref:
-    for member in zip_ref.infolist():
-        create_dirs(extract_path, member)
-        try:
-            zip_ref.extract(member, extract_path)
-        except zipfile.BadZipFile as e:
-            print(f"Error extracting {member.filename}: {e}")
+    # Unzip the dataset, handling potential file conflicts
+    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+        zip_ref.extractall(extract_path)
 
 # Load dataset
-dataset = ImageFolder(root='/content/data/KVasir', transform=transform)
+dataset = ImageFolder(root=extract_path, transform=transform)
+
+# Split dataset into training and validation
 train_size = int(0.5 * len(dataset))
 val_size = len(dataset) - train_size
 train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
@@ -52,14 +48,15 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # Initialize model, loss function, and optimizer
 num_classes = len(dataset.classes)
-model = main_model(num_classes=num_classes).to(device)
+model = HiFuseSmall(num_classes=num_classes).to(device)  # Assuming HiFuseSmall model is defined
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
-# Training and validation loops with TensorBoard logging
+# TensorBoard logging setup
 log_dir = os.path.join("runs", "experiment1")
 writer = SummaryWriter(log_dir)
 
+# Training and validation function
 num_epochs = 5  # Reduced number of epochs for quicker training
 
 def train_and_validate(model, train_loader, val_loader, criterion, optimizer, num_epochs, writer):
