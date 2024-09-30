@@ -39,7 +39,7 @@ with zipfile.ZipFile(zip_path, 'r') as zip_ref:
             print(f"Error extracting {member.filename}: {e}")
 
 # Load dataset
-dataset = ImageFolder(root='datasets/Kvasir', transform=transform)
+dataset = ImageFolder(root='/content/data/KVasir', transform=transform)
 train_size = int(0.5 * len(dataset))
 val_size = len(dataset) - train_size
 train_dataset, val_dataset = random_split(dataset, [train_size, val_size])
